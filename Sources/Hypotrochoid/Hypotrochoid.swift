@@ -1,7 +1,35 @@
 import SwiftUI
 
+func calculatePath(outer: Int, inner: Int, inset: Double) -> Path {
+    var path = Path()
+    let radius: Double = 1
+
+    let greatestCommonDivisor = gcd(outer, inner)
+    let divisor = inner / greatestCommonDivisor
+
+    let scaleFactor: Double = radius / Double(outer)
+
+    let a = Double(outer) * scaleFactor
+    let b = Double(inner) * scaleFactor
+    let h: Double = inset * scaleFactor
+
+    let x1 = x(a, b: b, h: h, t: 0)
+    let y1 = y(a, b: b, h: h, t: 0)
+    path.move(to: CGPoint(x: x1, y: y1))
+    let count = 1000
+    for i in 0 ... (count * divisor) {
+        let t = Double(i * 2) * .pi / Double(count)
+
+        let x = x(a, b: b, h: h, t: t)
+        let y = y(a, b: b, h: h, t: t)
+
+        path.addLine(to: CGPoint(x: x, y: y))
+    }
+    return path
+}
+
 public struct Hypotrochoid: Shape {
-    private let basePath: Path
+    private var basePath: Path
 
     public func path(in rect: CGRect) -> Path {
         let center = CGPoint(x: rect.midX, y: rect.midY)
@@ -11,34 +39,23 @@ public struct Hypotrochoid: Shape {
             .scaledBy(x: radius, y: radius)
         return basePath.applying(transform)
     }
+    var inner: Int
+    var outer: Int
+    var inset: Double {
+        didSet {
+            basePath = calculatePath(outer: outer, inner: inner, inset: inset)
+        }
+    }
+    public var animatableData: Double {
+        get { inset }
+        set { inset = newValue }
+    }
 
     public init(outer: Int, inner: Int, inset: Double) {
-        var path = Path()
-        let radius: Double = 1
-
-        let greatestCommonDivisor = gcd(outer, inner)
-        let divisor = inner / greatestCommonDivisor
-
-        let scaleFactor: Double = radius / Double(outer)
-
-        let a = Double(outer) * scaleFactor
-        let b = Double(inner) * scaleFactor
-        let h: Double = inset * scaleFactor
-
-        let x1 = x(a, b: b, h: h, t: 0)
-        let y1 = y(a, b: b, h: h, t: 0)
-        path.move(to: CGPoint(x: x1, y: y1))
-        let count = 1000
-        for i in 0 ... (count * divisor) {
-            let t = Double(i * 2) * .pi / Double(count)
-
-            let x = x(a, b: b, h: h, t: t)
-            let y = y(a, b: b, h: h, t: t)
-
-            path.addLine(to: CGPoint(x: x, y: y))
-        }
-
-        basePath = path
+        self.inset = inset
+        self.outer = outer
+        self.inner = inner
+        self.basePath = calculatePath(outer: outer, inner: inner, inset: inset)
     }
 }
 
